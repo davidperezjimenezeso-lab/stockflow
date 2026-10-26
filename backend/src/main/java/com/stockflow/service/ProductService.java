@@ -1,7 +1,10 @@
 package com.stockflow.service;
 
+import com.stockflow.dto.ProductRequest;
+import com.stockflow.dto.ProductResponse;
 import com.stockflow.model.Product;
 import com.stockflow.repository.ProductRepository;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,15 +20,27 @@ public class ProductService {
         this.productRepository = productRepository;
     }
 
-    public List<Product> getProducts() {
-        return productRepository.findAll();
+    public List<ProductResponse> getProducts() {
+        return productRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    public Product createProduct(Product product) {
-        return productRepository.save(product);
+    public ProductResponse createProduct(ProductRequest request) {
+
+        Product product = new Product(
+                request.name(),
+                request.price(),
+                request.stock()
+        );
+
+        Product saved = productRepository.save(product);
+
+        return toResponse(saved);
     }
 
-    public Product updateProduct(Long id, Product data) {
+    public ProductResponse updateProduct(Long id, ProductRequest request) {
 
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -33,11 +48,11 @@ public class ProductService {
                         "Producto no encontrado"
                 ));
 
-        product.setName(data.getName());
-        product.setPrice(data.getPrice());
-        product.setStock(data.getStock());
+        product.setName(request.name());
+        product.setPrice(request.price());
+        product.setStock(request.stock());
 
-        return productRepository.save(product);
+        return toResponse(productRepository.save(product));
     }
 
     public void deleteProduct(Long id) {
@@ -50,5 +65,15 @@ public class ProductService {
         }
 
         productRepository.deleteById(id);
+    }
+
+    private ProductResponse toResponse(Product product) {
+
+        return new ProductResponse(
+                product.getId(),
+                product.getName(),
+                product.getPrice(),
+                product.getStock()
+        );
     }
 }
