@@ -1,0 +1,156 @@
+<main class="container">
+
+  <h1>StockFlow</h1>
+  <p>Sistema de gestión de inventario</p>
+
+  <section class="form-section">
+
+    <h2>
+      {{ editingId() === null ? 'Crear producto' : 'Editar producto' }}
+    </h2>
+
+    <form #productForm="ngForm" (ngSubmit)="saveProduct()">
+
+      <div class="form-group">
+        <label for="name">Nombre</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          [(ngModel)]="newProduct.name"
+          required
+          maxlength="150"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="price">Precio (€)</label>
+        <input
+          id="price"
+          name="price"
+          type="number"
+          [(ngModel)]="newProduct.price"
+          min="0"
+          step="0.01"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="stock">Stock</label>
+        <input
+          id="stock"
+          name="stock"
+          type="number"
+          [(ngModel)]="newProduct.stock"
+          min="0"
+          step="1"
+          required
+        >
+      </div>
+
+      <div class="form-actions">
+
+        <button
+          type="submit"
+          [disabled]="productForm.invalid || saving() || deletingId() !== null"
+        >
+          {{
+            saving()
+              ? 'Guardando...'
+              : editingId() === null
+                ? 'Crear producto'
+                : 'Guardar cambios'
+          }}
+        </button>
+
+        @if (editingId() !== null) {
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="saving()"
+            (click)="cancelEdit()"
+          >
+            Cancelar
+          </button>
+        }
+
+      </div>
+
+    </form>
+
+  </section>
+
+  @if (success()) {
+    <p class="success">{{ success() }}</p>
+  }
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <section>
+
+    <h2>Inventario de productos</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Producto</th>
+          <th>Precio</th>
+          <th>Stock</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        @for (product of products(); track product.id) {
+          <tr>
+
+            <td>{{ product.id }}</td>
+            <td>{{ product.name }}</td>
+            <td>{{ product.price | currency:'EUR' }}</td>
+            <td>{{ product.stock }}</td>
+
+            <td class="actions">
+
+              <button
+                type="button"
+                class="edit"
+                [disabled]="saving() || deletingId() !== null"
+                (click)="editProduct(product)"
+              >
+                Editar
+              </button>
+
+              <button
+                type="button"
+                class="delete"
+                [disabled]="saving() || deletingId() !== null"
+                (click)="deleteProduct(product)"
+              >
+                {{
+                  deletingId() === product.id
+                    ? 'Eliminando...'
+                    : 'Eliminar'
+                }}
+              </button>
+
+            </td>
+
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5">No hay productos disponibles.</td>
+          </tr>
+        }
+
+      </tbody>
+
+    </table>
+
+  </section>
+
+</main>

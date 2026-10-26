@@ -1,0 +1,30 @@
+# Java / Spring Boot / Maven
+backend/target/
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Angular / Node.js
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+
+# Variables y secretos
+.env
+.env.*
+!.env.example
+**/application-local.properties
+**/application-secret.properties
+
+# Logs
+*.log
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
