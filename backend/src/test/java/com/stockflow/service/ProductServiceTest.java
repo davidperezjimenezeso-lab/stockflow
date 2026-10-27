@@ -1,5 +1,6 @@
-package com.stockflow.service;
 
+package com.stockflow.service;
+import com.stockflow.repository.StockMovementRepository;
 import com.stockflow.dto.ProductRequest;
 import com.stockflow.dto.ProductResponse;
 import com.stockflow.model.Product;
@@ -21,6 +22,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,6 +30,9 @@ class ProductServiceTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private StockMovementRepository movementRepository;
 
     @InjectMocks
     private ProductService productService;
@@ -59,7 +64,8 @@ class ProductServiceTest {
         ProductRequest request = new ProductRequest(
                 "Teclado Logitech",
                 new BigDecimal("49.99"),
-                20
+                20,
+                null
         );
 
         when(productRepository.save(any(Product.class)))
@@ -86,7 +92,8 @@ class ProductServiceTest {
         ProductRequest request = new ProductRequest(
                 "Monitor actualizado",
                 new BigDecimal("220.00"),
-                12
+                5,
+                null
         );
 
         when(productRepository.findById(1L))
@@ -99,7 +106,9 @@ class ProductServiceTest {
 
         assertEquals("Monitor actualizado", result.name());
         assertEquals(new BigDecimal("220.00"), result.price());
-        assertEquals(12, result.stock());
+
+        // El stock no se modifica desde la edición.
+        assertEquals(5, result.stock());
 
         verify(productRepository).save(existing);
     }
@@ -110,7 +119,8 @@ class ProductServiceTest {
         ProductRequest request = new ProductRequest(
                 "Producto inexistente",
                 new BigDecimal("50.00"),
-                3
+                3,
+                null
         );
 
         when(productRepository.findById(999L))
@@ -121,9 +131,13 @@ class ProductServiceTest {
                 () -> productService.updateProduct(999L, request)
         );
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals(
+                HttpStatus.NOT_FOUND,
+                exception.getStatusCode()
+        );
 
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never())
+                .save(any(Product.class));
     }
 
     @Test
@@ -131,6 +145,9 @@ class ProductServiceTest {
 
         when(productRepository.existsById(1L))
                 .thenReturn(true);
+
+        when(movementRepository.existsByProductId(1L))
+                .thenReturn(false);
 
         productService.deleteProduct(1L);
 
@@ -148,8 +165,12 @@ class ProductServiceTest {
                 () -> productService.deleteProduct(999L)
         );
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals(
+                HttpStatus.NOT_FOUND,
+                exception.getStatusCode()
+        );
 
-        verify(productRepository, never()).deleteById(anyLong());
+        verify(productRepository, never())
+                .deleteById(anyLong());
     }
 }

@@ -6,5 +6,7 @@ public record ProductResponse(
         Long id,
         String name,
         BigDecimal price,
-        int stock
+        int stock,
+        Long categoryId,
+        String categoryName
 ) {}

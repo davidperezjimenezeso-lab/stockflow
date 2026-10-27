@@ -27,4 +27,6 @@ frontend/coverage/
 Thumbs.db
 
 # VS Code
+.vscode/.env
+*.properties.bak
 .vscode/

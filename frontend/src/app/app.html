@@ -1,156 +1,862 @@
-<main class="container">
 
-  <h1>StockFlow</h1>
-  <p>Sistema de gestión de inventario</p>
+@if (!isAuthenticated()) {
 
-  <section class="form-section">
+  <!-- LOGIN -->
+  <main class="login-page">
+    <section class="login-card">
+      <h1>StockFlow</h1>
+      <p>Accede a tu panel de gestión empresarial</p>
 
-    <h2>
-      {{ editingId() === null ? 'Crear producto' : 'Editar producto' }}
-    </h2>
+      <h2>Iniciar sesión</h2>
 
-    <form #productForm="ngForm" (ngSubmit)="saveProduct()">
+      <form #loginForm="ngForm" (ngSubmit)="login()">
+        <div class="form-group">
+          <label for="loginUsername">Usuario</label>
+          <input
+            id="loginUsername"
+            name="loginUsername"
+            type="text"
+            [(ngModel)]="loginUsername"
+            autocomplete="username"
+            required
+          >
+        </div>
 
-      <div class="form-group">
-        <label for="name">Nombre</label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          [(ngModel)]="newProduct.name"
-          required
-          maxlength="150"
-        >
-      </div>
+        <div class="form-group">
+          <label for="loginPassword">Contraseña</label>
+          <input
+            id="loginPassword"
+            name="loginPassword"
+            type="password"
+            [(ngModel)]="loginPassword"
+            autocomplete="current-password"
+            required
+          >
+        </div>
 
-      <div class="form-group">
-        <label for="price">Precio (€)</label>
-        <input
-          id="price"
-          name="price"
-          type="number"
-          [(ngModel)]="newProduct.price"
-          min="0"
-          step="0.01"
-          required
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="stock">Stock</label>
-        <input
-          id="stock"
-          name="stock"
-          type="number"
-          [(ngModel)]="newProduct.stock"
-          min="0"
-          step="1"
-          required
-        >
-      </div>
-
-      <div class="form-actions">
+        @if (loginError()) {
+          <p class="error">{{ loginError() }}</p>
+        }
 
         <button
           type="submit"
-          [disabled]="productForm.invalid || saving() || deletingId() !== null"
+          [disabled]="loginForm.invalid || loggingIn()"
         >
-          {{
-            saving()
-              ? 'Guardando...'
-              : editingId() === null
-                ? 'Crear producto'
-                : 'Guardar cambios'
-          }}
+          {{ loggingIn() ? 'Accediendo...' : 'Entrar en StockFlow' }}
         </button>
+      </form>
+    </section>
+  </main>
 
-        @if (editingId() !== null) {
-          <button
-            type="button"
-            class="secondary"
-            [disabled]="saving()"
-            (click)="cancelEdit()"
-          >
-            Cancelar
-          </button>
-        }
+} @else {
 
+  <!-- APLICACIÓN -->
+  <div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="app-sidebar">
+
+      <div class="sidebar-brand">
+        <div class="brand-icon">S</div>
+        <div>
+          <strong>StockFlow</strong>
+          <span>Business Management</span>
+        </div>
       </div>
 
-    </form>
+      <p class="sidebar-label">MENÚ PRINCIPAL</p>
 
-  </section>
+      <nav class="sidebar-nav" aria-label="Navegación principal">
 
-  @if (success()) {
-    <p class="success">{{ success() }}</p>
-  }
+        <button
+          type="button"
+          [class.active]="activeSection() === 'dashboard'"
+          (click)="navigateTo('dashboard')"
+        >
+          <span>▦</span>
+          Dashboard
+        </button>
 
-  @if (error()) {
-    <p class="error">{{ error() }}</p>
-  }
+        <button
+          type="button"
+          [class.active]="activeSection() === 'products'"
+          (click)="navigateTo('products')"
+        >
+          <span>▤</span>
+          Productos
+        </button>
 
-  <section>
+        <button
+          type="button"
+          [class.active]="activeSection() === 'movements'"
+          (click)="navigateTo('movements')"
+        >
+          <span>⇄</span>
+          Movimientos
+        </button>
 
-    <h2>Inventario de productos</h2>
+        <button
+          type="button"
+          [class.active]="activeSection() === 'sales'"
+          (click)="navigateTo('sales')"
+        >
+          <span>◈</span>
+          Ventas
+        </button>
 
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Producto</th>
-          <th>Precio</th>
-          <th>Stock</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
+      </nav>
 
-      <tbody>
+      <!-- USUARIO -->
+      <div class="sidebar-footer">
 
-        @for (product of products(); track product.id) {
-          <tr>
+        <div class="sidebar-user">
+          <div class="user-avatar">
+            {{ authService.currentUser()?.username?.charAt(0)?.toUpperCase() }}
+          </div>
 
-            <td>{{ product.id }}</td>
-            <td>{{ product.name }}</td>
-            <td>{{ product.price | currency:'EUR' }}</td>
-            <td>{{ product.stock }}</td>
+          <div class="user-info">
+            <strong>{{ authService.currentUser()?.username }}</strong>
+            <span>{{ authService.currentUser()?.role }}</span>
+          </div>
+        </div>
 
-            <td class="actions">
+        <button
+          type="button"
+          class="sidebar-logout"
+          (click)="logout()"
+        >
+          Cerrar sesión
+        </button>
 
-              <button
-                type="button"
-                class="edit"
-                [disabled]="saving() || deletingId() !== null"
-                (click)="editProduct(product)"
-              >
-                Editar
-              </button>
+      </div>
+    </aside>
 
-              <button
-                type="button"
-                class="delete"
-                [disabled]="saving() || deletingId() !== null"
-                (click)="deleteProduct(product)"
-              >
-                {{
-                  deletingId() === product.id
-                    ? 'Eliminando...'
-                    : 'Eliminar'
-                }}
-              </button>
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="container">
 
-            </td>
+      <!-- CABECERA -->
+      <header class="app-header">
+        <h1>
+          @switch (activeSection()) {
+            @case ('dashboard') { Dashboard }
+            @case ('products') { Productos }
+            @case ('movements') { Movimientos }
+            @case ('sales') { Ventas }
+          }
+        </h1>
 
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="5">No hay productos disponibles.</td>
-          </tr>
+        <p>Sistema de gestión de inventario StockFlow</p>
+      </header>
+
+      <!-- MENSAJES GLOBALES -->
+      @if (success()) {
+        <p class="success">{{ success() }}</p>
+      }
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <!-- ========================================
+           DASHBOARD
+      ========================================= -->
+      @if (activeSection() === 'dashboard') {
+
+        <section class="dashboard">
+
+          <div class="dashboard-heading">
+            <div>
+              <p class="dashboard-eyebrow">PANEL DE CONTROL</p>
+              <h2>Resumen del negocio</h2>
+              <p>
+                Consulta el estado del inventario y las ventas
+                de StockFlow.
+              </p>
+            </div>
+
+            <span class="dashboard-role">
+              {{ authService.currentUser()?.role }}
+            </span>
+          </div>
+
+          <!-- TARJETAS -->
+          <div class="dashboard-grid">
+
+            <article class="stat-card">
+              <div class="stat-icon">📦</div>
+              <span class="stat-label">Productos registrados</span>
+              <strong class="stat-value">{{ totalProducts() }}</strong>
+              <span class="stat-description">
+                Productos en el catálogo
+              </span>
+            </article>
+
+            <article class="stat-card">
+              <div class="stat-icon">🏷️</div>
+              <span class="stat-label">Unidades disponibles</span>
+              <strong class="stat-value">{{ totalStockUnits() }}</strong>
+              <span class="stat-description">
+                Existencias totales
+              </span>
+            </article>
+
+            <article class="stat-card">
+              <div class="stat-icon">💶</div>
+              <span class="stat-label">Valor del inventario</span>
+              <strong class="stat-value">
+                {{ inventoryValue() | currency:'EUR' }}
+              </strong>
+              <span class="stat-description">
+                Valor según precio de venta
+              </span>
+            </article>
+
+            <article class="stat-card">
+              <div class="stat-icon">🛒</div>
+              <span class="stat-label">Importe vendido</span>
+              <strong class="stat-value">
+                {{ totalSalesAmount() | currency:'EUR' }}
+              </strong>
+              <span class="stat-description">
+                {{ totalSalesCount() }} ventas registradas
+              </span>
+            </article>
+
+          </div>
+
+          <!-- ALERTAS -->
+          <div class="dashboard-alerts">
+
+            <div class="alerts-heading">
+              <h3>Alertas de inventario</h3>
+              <span class="alert-count">
+                {{ lowStockProducts().length }} productos
+              </span>
+            </div>
+
+            @if (lowStockProducts().length === 0) {
+
+              <div class="alert-success">
+                ✓ No hay productos con stock bajo.
+              </div>
+
+            } @else {
+
+              <div class="alert-list">
+                @for (product of lowStockProducts(); track product.id) {
+                  <div class="alert-item">
+                    <div>
+                      <strong>{{ product.name }}</strong>
+                      <span>
+                        {{ product.stock }} unidades disponibles
+                      </span>
+                    </div>
+
+                    <span class="stock-badge">
+                      {{
+                        product.stock === 0
+                          ? 'Agotado'
+                          : 'Stock bajo'
+                      }}
+                    </span>
+                  </div>
+                }
+              </div>
+
+            }
+          </div>
+
+        </section>
+
+      }
+
+      <!-- ========================================
+           PRODUCTOS
+      ========================================= -->
+      @if (activeSection() === 'products') {
+
+        <!-- CREACIÓN Y EDICIÓN: ADMIN -->
+        @if (isAdmin()) {
+
+          <section class="form-section">
+
+            <h2>
+              {{ editingId() === null ? 'Crear producto' : 'Editar producto' }}
+            </h2>
+
+            <form #productForm="ngForm" (ngSubmit)="saveProduct()">
+
+              <div class="form-group">
+                <label for="name">Nombre</label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  [(ngModel)]="newProduct.name"
+                  required
+                  maxlength="150"
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="price">Precio (€)</label>
+                <input
+                  id="price"
+                  name="price"
+                  type="number"
+                  [(ngModel)]="newProduct.price"
+                  min="0"
+                  step="0.01"
+                  required
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="stock">
+                  {{
+                    editingId() === null
+                      ? 'Stock inicial'
+                      : 'Stock actual'
+                  }}
+                </label>
+
+                <input
+                  id="stock"
+                  name="stock"
+                  type="number"
+                  [(ngModel)]="newProduct.stock"
+                  min="0"
+                  step="1"
+                  required
+                  [readonly]="editingId() !== null"
+                >
+
+                @if (editingId() !== null) {
+                  <small>
+                    Para cambiar las existencias, registra una
+                    entrada o salida de inventario.
+                  </small>
+                }
+              </div>
+
+              <div class="form-group">
+                <label for="category">Categoría</label>
+
+                <select
+                  id="category"
+                  name="categoryId"
+                  [(ngModel)]="newProduct.categoryId"
+                >
+                  <option [ngValue]="null">Sin categoría</option>
+
+                  @for (category of categories(); track category.id) {
+                    <option [ngValue]="category.id">
+                      {{ category.name }}
+                    </option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-actions">
+
+                <button
+                  type="submit"
+                  [disabled]="
+                    productForm.invalid ||
+                    saving() ||
+                    savingMovement() ||
+                    deletingId() !== null
+                  "
+                >
+                  {{
+                    saving()
+                      ? 'Guardando...'
+                      : editingId() === null
+                        ? 'Crear producto'
+                        : 'Guardar cambios'
+                  }}
+                </button>
+
+                @if (editingId() !== null) {
+                  <button
+                    type="button"
+                    class="secondary"
+                    [disabled]="saving()"
+                    (click)="cancelEdit()"
+                  >
+                    Cancelar
+                  </button>
+                }
+
+              </div>
+            </form>
+          </section>
+
         }
 
-      </tbody>
+        <!-- CATÁLOGO -->
+        <section>
 
-    </table>
+          <h2>Inventario de productos</h2>
 
-  </section>
+          <div class="form-group">
+            <label for="categoryFilter">Filtrar por categoría</label>
 
-</main>
+            <select
+              id="categoryFilter"
+              #categoryFilter
+              [value]="filterCategoryId() ?? ''"
+              (change)="changeCategoryFilter(categoryFilter.value)"
+            >
+              <option value="">Todas las categorías</option>
+
+              @for (category of categories(); track category.id) {
+                <option [value]="category.id">
+                  {{ category.name }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Stock</th>
+
+                @if (isAdmin()) {
+                  <th>Acciones</th>
+                }
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (product of filteredProducts(); track product.id) {
+                <tr>
+                  <td>{{ product.id }}</td>
+                  <td>{{ product.name }}</td>
+                  <td>{{ product.categoryName ?? 'Sin categoría' }}</td>
+                  <td>{{ product.price | currency:'EUR' }}</td>
+
+<td>
+  <span
+    class="inventory-status"
+    [class.status-out]="product.stock === 0"
+    [class.status-low]="product.stock > 0 && product.stock <= 5"
+    [class.status-ok]="product.stock > 5"
+  >
+    <span class="status-dot"></span>
+
+    {{
+      product.stock === 0
+        ? 'Agotado'
+        : product.stock <= 5
+          ? 'Stock bajo'
+          : 'Disponible'
+    }}
+
+    <span class="status-quantity">
+      ({{ product.stock }})
+    </span>
+  </span>
+</td>
+
+
+                  @if (isAdmin()) {
+                    <td class="actions">
+
+                      <button
+                        type="button"
+                        class="edit"
+                        [disabled]="
+                          saving() ||
+                          savingMovement() ||
+                          deletingId() !== null
+                        "
+                        (click)="editProduct(product)"
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        type="button"
+                        class="delete"
+                        [disabled]="
+                          saving() ||
+                          savingMovement() ||
+                          deletingId() !== null
+                        "
+                        (click)="deleteProduct(product)"
+                      >
+                        {{
+                          deletingId() === product.id
+                            ? 'Eliminando...'
+                            : 'Eliminar'
+                        }}
+                      </button>
+
+                    </td>
+                  }
+                </tr>
+              } @empty {
+                <tr>
+                  <td [attr.colspan]="isAdmin() ? 6 : 5">
+                    No hay productos en esta categoría.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <p>
+            Mostrando {{ filteredProducts().length }}
+            de {{ products().length }} productos.
+          </p>
+
+        </section>
+
+      }
+
+      <!-- ========================================
+           MOVIMIENTOS
+      ========================================= -->
+      @if (activeSection() === 'movements') {
+
+        <!-- REGISTRAR MOVIMIENTO -->
+        <section class="form-section">
+
+          <h2>Registrar movimiento de inventario</h2>
+          <p>Registra entradas y salidas de productos del almacén.</p>
+
+          <form #movementForm="ngForm" (ngSubmit)="saveMovement()">
+
+            <div class="form-group">
+              <label for="movementProduct">Producto</label>
+
+              <select
+                id="movementProduct"
+                name="movementProduct"
+                [(ngModel)]="newMovement.productId"
+                required
+              >
+                <option [ngValue]="0" disabled>
+                  Selecciona un producto
+                </option>
+
+                @for (product of products(); track product.id) {
+                  <option [ngValue]="product.id">
+                    {{ product.name }} (Stock: {{ product.stock }})
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="movementType">Tipo de movimiento</label>
+
+              <select
+                id="movementType"
+                name="movementType"
+                [(ngModel)]="newMovement.movementType"
+                required
+              >
+                <option value="IN">Entrada de stock</option>
+                <option value="OUT">Salida de stock</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="movementQuantity">Cantidad</label>
+
+              <input
+                id="movementQuantity"
+                name="movementQuantity"
+                type="number"
+                [(ngModel)]="newMovement.quantity"
+                min="1"
+                step="1"
+                required
+              >
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="submit"
+                [disabled]="
+                  movementForm.invalid ||
+                  newMovement.productId === 0 ||
+                  savingMovement() ||
+                  saving() ||
+                  deletingId() !== null
+                "
+              >
+                {{
+                  savingMovement()
+                    ? 'Registrando...'
+                    : 'Registrar movimiento'
+                }}
+              </button>
+            </div>
+
+          </form>
+        </section>
+
+        <!-- HISTORIAL DE MOVIMIENTOS -->
+        <section>
+
+          <h2>Historial de movimientos</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Stock resultante</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (movement of movements(); track movement.id) {
+                <tr>
+                  <td>{{ movement.id }}</td>
+                  <td>{{ movement.productName }}</td>
+
+                  <td>
+                    @if (movement.movementType === 'IN') {
+                      <span class="success">Entrada</span>
+                    } @else {
+                      <span class="error">Salida</span>
+                    }
+                  </td>
+
+                  <td>
+                    {{ movement.movementType === 'IN' ? '+' : '-' }}
+                    {{ movement.quantity }}
+                  </td>
+
+                  <td>{{ movement.resultingStock }}</td>
+
+                  <td>
+                    {{ movement.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6">
+                    Todavía no hay movimientos registrados.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+        </section>
+
+      }
+
+      <!-- ========================================
+           VENTAS
+      ========================================= -->
+      @if (activeSection() === 'sales') {
+
+        <!-- NUEVA VENTA -->
+        <section class="form-section">
+
+          <h2>Registrar venta</h2>
+          <p>
+            Selecciona los productos y cantidades que deseas vender.
+          </p>
+
+          <form #cartForm="ngForm" (ngSubmit)="addToCart()">
+
+            <div class="form-group">
+              <label for="saleProduct">Producto</label>
+
+              <select
+                id="saleProduct"
+                name="saleProduct"
+                [(ngModel)]="selectedSaleProductId"
+                required
+              >
+                <option [ngValue]="0" disabled>
+                  Selecciona un producto
+                </option>
+
+                @for (product of products(); track product.id) {
+                  <option [ngValue]="product.id">
+                    {{ product.name }} —
+                    {{ product.price | currency:'EUR' }}
+                    (Stock: {{ product.stock }})
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="saleQuantity">Cantidad</label>
+
+              <input
+                id="saleQuantity"
+                name="saleQuantity"
+                type="number"
+                [(ngModel)]="selectedSaleQuantity"
+                min="1"
+                step="1"
+                required
+              >
+            </div>
+
+            <button
+              type="submit"
+              [disabled]="
+                cartForm.invalid ||
+                selectedSaleProductId === 0 ||
+                savingSale() ||
+                savingMovement()
+              "
+            >
+              Añadir al carrito
+            </button>
+
+          </form>
+
+          <!-- CARRITO -->
+          <h3>Carrito de venta</h3>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Precio</th>
+                <th>Cantidad</th>
+                <th>Subtotal</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (item of cart(); track item.productId) {
+                <tr>
+                  <td>
+                    {{ getCartProductName(item.productId) }}
+                  </td>
+
+                  <td>
+                    {{ getCartProductPrice(item.productId) | currency:'EUR' }}
+                  </td>
+
+                  <td>{{ item.quantity }}</td>
+
+                  <td>
+                    {{
+                      getCartProductPrice(item.productId) * item.quantity
+                        | currency:'EUR'
+                    }}
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      class="delete"
+                      [disabled]="savingSale()"
+                      (click)="removeFromCart(item.productId)"
+                    >
+                      Quitar
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5">
+                    El carrito está vacío.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <h3>
+            Total: {{ cartTotal() | currency:'EUR' }}
+          </h3>
+
+          <button
+            type="button"
+            [disabled]="
+              cart().length === 0 ||
+              savingSale() ||
+              saving() ||
+              savingMovement() ||
+              deletingId() !== null
+            "
+            (click)="saveSale()"
+          >
+            {{
+              savingSale()
+                ? 'Registrando venta...'
+                : 'Confirmar venta'
+            }}
+          </button>
+
+        </section>
+
+        <!-- HISTORIAL DE VENTAS -->
+        <section>
+
+          <h2>Historial de ventas</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Productos vendidos</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (sale of sales(); track sale.id) {
+                <tr>
+                  <td>{{ sale.id }}</td>
+
+                  <td>
+                    {{ sale.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                  </td>
+
+                  <td>
+                    @for (item of sale.items; track item.productId) {
+                      <div>
+                        {{ item.productName }} × {{ item.quantity }}
+                        ({{ item.subtotal | currency:'EUR' }})
+                      </div>
+                    }
+                  </td>
+
+                  <td>
+                    {{ sale.total | currency:'EUR' }}
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4">
+                    Todavía no hay ventas registradas.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+        </section>
+
+      }
+
+    </div>
+  </div>
+
+}

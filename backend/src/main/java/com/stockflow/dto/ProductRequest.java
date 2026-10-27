@@ -17,6 +17,8 @@ public record ProductRequest(
 
         @NotNull(message = "El stock es obligatorio")
         @Min(value = 0, message = "El stock no puede ser negativo")
-        Integer stock
+        Integer stock,
+        Long categoryId
+
 
 ) {}
